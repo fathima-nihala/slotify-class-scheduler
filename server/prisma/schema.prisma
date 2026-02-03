@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  name      String?
+  password  String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  
+  bookings  Booking[]
+
+  @@map("users")
+}
+
+model Batch {
+  id        String     @id @default(cuid())
+  month     Int        // 1-12
+  year      Int        // 2024, 2025, etc.
+  batchNum  Int        // 1, 2, or 3
+  startDate DateTime   // First day of batch
+  endDate   DateTime   // Last day of batch
+  createdAt DateTime   @default(now())
+  
+  classes   Class[]
+
+  @@unique([month, year, batchNum])
+  @@map("batches")
+}
+
+model Class {
+  id        String     @id @default(cuid())
+  batchId   String
+  batch     Batch      @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  
+  dayOfWeek Int        // 0-6, Monday=0, Sunday=6
+  date      DateTime
+  topic     String     // Topic name for the class
+  
+  createdAt DateTime   @default(now())
+  
+  bookings  Booking[]
+
+  @@unique([batchId, date, topic])
+  @@map("classes")
+}
+
+model Booking {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  classId   String
+  class     Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
+  
+  status    BookingStatus @default(PENDING)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  
+  @@unique([userId, classId])
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
