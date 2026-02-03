@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import AppTooltip from "../shared/AppTooltip";
+import { Link } from "react-router-dom";
 
 type LoginFormValues = {
   email: string;
@@ -80,9 +81,9 @@ const Login: React.FC = () => {
           </div>
         </form>
 
-        <div className="text-center text-gray-500 my-8 cursor-pointer hover:underline">
+        <Link to="/signup" className=" flex justify-center text-center text-gray-500 my-8 cursor-pointer hover:underline">
           Create a new account
-        </div>
+        </Link>
 
         <button
           type="submit"
