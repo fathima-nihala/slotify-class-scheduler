@@ -6,6 +6,7 @@ import * as yup from "yup";
 import { Label } from "../shared/Label";
 import { Input } from "../shared/Input";
 import { Error } from "../shared/Error";
+import { Link } from "react-router-dom";
 
 type SignupFormValues = {
   firstName: string;
@@ -121,9 +122,9 @@ const Signup: React.FC = () => {
 
         <div className="text-center text-gray-500 my-8">
           Already have an Account?{" "}
-          <span className="text-black font-medium cursor-pointer">
+          <Link to="/login" className="text-black font-medium cursor-pointer">
             Login
-          </span>
+          </Link>
         </div>
 
         <button

@@ -2,8 +2,9 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import AppTooltip from "../shared/AppTooltip";
 import { Link } from "react-router-dom";
+import { Input } from "../shared/Input";
+import { Label } from "../shared/Label";
 
 type LoginFormValues = {
   email: string;
@@ -46,14 +47,10 @@ const Login: React.FC = () => {
         >
           {/* Email */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium mb-2">
-              Email Id
-                <AppTooltip text="Enter your registered email address" />
-            </label>
-            <input
+            <Label text="Email Id" tooltip="Enter your registered email address" />
+            <Input
               type="email"
               {...register("email")}
-              className="w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
             {errors.email && (
               <p className="text-red-500 text-xs mt-1">
@@ -64,14 +61,10 @@ const Login: React.FC = () => {
 
           {/* Password */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium mb-2">
-              Password
-              <AppTooltip text="Minimum 6 characters" />
-            </label>
-            <input
+            <Label text="Password" tooltip="Minimum 6 characters" />
+            <Input
               type="password"
               {...register("password")}
-              className="w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
             {errors.password && (
               <p className="text-red-500 text-xs mt-1">
