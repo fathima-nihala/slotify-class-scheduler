@@ -4,6 +4,7 @@ import { Route, Routes } from 'react-router-dom'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ProtectedRoute from './pages/ProtectedRoute'
+import MonthlySchedule from './components/MonthlySchedule'
 
 const App = () => {
   return (
@@ -14,8 +15,8 @@ const App = () => {
 
       {/* Protected */}
       <Route element={<ProtectedRoute />}>
-        {/* <Route path="/schedule" element={<MonthlySchedule />} />
-        <Route path="/schedule/overview" element={<SelectedSlots />} /> */}
+        <Route path="/" element={<MonthlySchedule />} />
+        {/* <Route path="/schedule/overview" element={<SelectedSlots />} /> */}
       </Route>
     </Routes>
   )

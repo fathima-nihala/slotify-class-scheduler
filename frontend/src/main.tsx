@@ -5,7 +5,6 @@ import App from './App.tsx'
 import { BrowserRouter } from 'react-router-dom'
 import { Provider } from 'react-redux'
 import { store } from './app/store.ts'
-import { AuthProvider } from './context/AuthContext.tsx'
 import * as Tooltip from '@radix-ui/react-tooltip'
 
 createRoot(document.getElementById('root')!).render(
@@ -13,9 +12,7 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <Tooltip.Provider>
         <Provider store={store}>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
+          <App />
         </Provider>
       </Tooltip.Provider>
     </BrowserRouter>
