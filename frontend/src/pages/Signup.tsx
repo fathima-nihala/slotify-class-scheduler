@@ -157,7 +157,7 @@ const Signup: React.FC = () => {
         <button
           disabled={isSubmitting || isLoading}
           onClick={handleSubmit(onSubmit)}
-          className="block mx-auto bg-purple-700 text-white px-24 py-4 rounded-xl font-semibold hover:bg-purple-800 transition disabled:opacity-60"
+          className="block cursor-pointer mx-auto bg-purple-700 text-white px-24 py-4 rounded-xl font-semibold hover:bg-purple-800 transition disabled:opacity-60"
         >
           {isLoading ? "Signing up..." : "Sign Up"}
         </button>

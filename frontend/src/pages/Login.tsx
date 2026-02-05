@@ -108,7 +108,7 @@ const Login: React.FC = () => {
           type="submit"
           disabled={isSubmitting || isLoading}
           onClick={handleSubmit(onSubmit)}
-          className="w-full bg-purple-700 text-white py-4 rounded-xl font-semibold hover:bg-purple-800 transition disabled:opacity-60"
+          className="w-full bg-purple-700 cursor-pointer text-white py-4 rounded-xl font-semibold hover:bg-purple-800 transition disabled:opacity-60"
         >
           {isLoading ? "Logging in..." : "Login"}
         </button>
