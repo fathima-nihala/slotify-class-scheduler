@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -6,7 +6,9 @@ import * as yup from "yup";
 import { Label } from "../shared/Label";
 import { Input } from "../shared/Input";
 import { Error } from "../shared/Error";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import { signup, clearError } from "../features/auth/authSlice";
 
 type SignupFormValues = {
   firstName: string;
@@ -35,9 +37,14 @@ const schema = yup.object({
     .string()
     .oneOf([yup.ref("password")], "Passwords do not match")
     .required("Confirm your password"),
+  // Note: the backend handles creating "name" from firstName and lastName
 });
 
 const Signup: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const { isLoading, error, token } = useAppSelector((state) => state.auth);
+
   const {
     register,
     handleSubmit,
@@ -47,14 +54,34 @@ const Signup: React.FC = () => {
     defaultValues: { countryCode: "+91" },
   });
 
-  const onSubmit = (data: SignupFormValues) => {
-    console.log("Signup Data:", data);
+  useEffect(() => {
+    if (token) {
+      navigate("/");
+    }
+    return () => {
+      dispatch(clearError());
+    };
+  }, [token, navigate, dispatch]);
+
+  const onSubmit = async (data: SignupFormValues) => {
+    try {
+      await dispatch(signup(data)).unwrap();
+      navigate("/");
+    } catch (err) {
+      console.error("Signup failed:", err);
+    }
   };
 
   return (
     <Tooltip.Provider delayDuration={200}>
       <div className="min-h-screen bg-white px-8 py-10">
         <h1 className="text-3xl font-semibold mb-8">Sign Up</h1>
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-center max-w-4xl mx-auto" role="alert">
+            <span className="block sm:inline">{error}</span>
+          </div>
+        )}
 
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -128,11 +155,11 @@ const Signup: React.FC = () => {
         </div>
 
         <button
-          disabled={isSubmitting}
+          disabled={isSubmitting || isLoading}
           onClick={handleSubmit(onSubmit)}
           className="block mx-auto bg-purple-700 text-white px-24 py-4 rounded-xl font-semibold hover:bg-purple-800 transition disabled:opacity-60"
         >
-          Sign Up
+          {isLoading ? "Signing up..." : "Sign Up"}
         </button>
       </div>
     </Tooltip.Provider>
