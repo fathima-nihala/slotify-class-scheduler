@@ -3,6 +3,7 @@ import cors from 'cors';
 import { config } from './config';
 import batchesRouter from './routes/batches';
 import bookingsRouter from './routes/bookings';
+import authRouter from './routes/auth';
 
 const app = express();
 
@@ -11,6 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/api', authRouter);
 app.use('/api', batchesRouter);
 app.use('/api', bookingsRouter);
 

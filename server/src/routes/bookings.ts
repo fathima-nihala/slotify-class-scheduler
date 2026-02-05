@@ -6,7 +6,7 @@ const router = express.Router();
 // Get user bookings
 router.get('/user/:userId/bookings', async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
+    const { userId } = req.params as { userId: string };
 
     const bookings = await prisma.booking.findMany({
       where: { userId },
@@ -41,7 +41,8 @@ router.post('/bookings', async (req: Request, res: Response) => {
     });
 
     if (existing) {
-      return res.status(400).json({ error: 'Booking already exists' });
+      res.status(400).json({ error: 'Booking already exists' });
+      return;
     }
 
     const booking = await prisma.booking.create({
@@ -68,7 +69,7 @@ router.post('/bookings', async (req: Request, res: Response) => {
 // Delete a booking
 router.delete('/bookings/:bookingId', async (req: Request, res: Response) => {
   try {
-    const { bookingId } = req.params;
+    const { bookingId } = req.params as { bookingId: string };
 
     await prisma.booking.delete({
       where: { id: bookingId },
@@ -83,7 +84,7 @@ router.delete('/bookings/:bookingId', async (req: Request, res: Response) => {
 // Confirm booking (submit)
 router.patch('/bookings/:bookingId/confirm', async (req: Request, res: Response) => {
   try {
-    const { bookingId } = req.params;
+    const { bookingId } = req.params as { bookingId: string };
 
     const booking = await prisma.booking.update({
       where: { id: bookingId },

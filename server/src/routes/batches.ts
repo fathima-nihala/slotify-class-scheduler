@@ -7,8 +7,8 @@ const router = express.Router();
 // Get all batches for a month
 router.get('/batches/:month/:year', async (req: Request, res: Response) => {
   try {
-    const { month, year } = req.params;
-    
+    const { month, year } = req.params as { month: string; year: string };
+
     const batches = await prisma.batch.findMany({
       where: {
         month: parseInt(month),
@@ -28,8 +28,8 @@ router.get('/batches/:month/:year', async (req: Request, res: Response) => {
 // Get classes for a specific batch
 router.get('/batches/:batchId/classes', async (req: Request, res: Response) => {
   try {
-    const { batchId } = req.params;
-    
+    const { batchId } = req.params as { batchId: string };
+
     const classes = await prisma.class.findMany({
       where: { batchId },
     });
@@ -43,7 +43,7 @@ router.get('/batches/:batchId/classes', async (req: Request, res: Response) => {
 // Initialize batches and classes for a month (admin endpoint)
 router.post('/batches/init/:month/:year', async (req: Request, res: Response) => {
   try {
-    const { month, year } = req.params;
+    const { month, year } = req.params as { month: string; year: string };
     const monthNum = parseInt(month);
     const yearNum = parseInt(year);
 
