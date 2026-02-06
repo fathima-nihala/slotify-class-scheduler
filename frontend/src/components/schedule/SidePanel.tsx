@@ -4,36 +4,81 @@ import { Clock, Instagram, Facebook, Twitter, MessageCircle, Edit2, Check } from
 interface SidePanelProps {
     topics: string[];
     onTopicChange: (index: number, newTopic: string) => void;
+    times: { start: string, end: string };
+    onTimeChange: (key: "start" | "end", newVal: string) => void;
     onSubmit: () => void;
     onViewScheduled: () => void;
     inquiryNumber: string;
 }
 
-const SidePanel: React.FC<SidePanelProps> = ({ topics, onTopicChange, onSubmit, onViewScheduled, inquiryNumber }) => {
+const SidePanel: React.FC<SidePanelProps> = ({
+    topics, onTopicChange, times, onTimeChange, onSubmit, onViewScheduled, inquiryNumber
+}) => {
     const [editingIdx, setEditingIdx] = useState<number | null>(null);
+    const [editingTimeKey, setEditingTimeKey] = useState<"start" | "end" | null>(null);
     const [editValue, setEditValue] = useState("");
 
-    const startEditing = (idx: number, val: string) => {
+    const startEditingTopic = (idx: number, val: string) => {
         setEditingIdx(idx);
+        setEditingTimeKey(null);
         setEditValue(val);
     };
 
-    const saveEdit = (idx: number) => {
+    const startEditingTime = (key: "start" | "end", val: string) => {
+        setEditingTimeKey(key);
+        setEditingIdx(null);
+        setEditValue(val);
+    };
+
+    const saveTopic = (idx: number) => {
         onTopicChange(idx, editValue);
         setEditingIdx(null);
+    };
+
+    const saveTime = (key: "start" | "end") => {
+        onTimeChange(key, editValue);
+        setEditingTimeKey(null);
     };
 
     return (
         <div className="flex-1 flex flex-col gap-4">
             {/* Time Selection */}
             <div className="flex items-center gap-2">
-                <div className="flex-1 bg-[#f5f5f5] p-3 md:p-4 rounded-lg flex items-center justify-center gap-2 md:gap-3 cursor-pointer hover:bg-slate-200 transition-colors">
+                <div
+                    className="flex-1 bg-[#f5f5f5] p-3 md:p-4 rounded-lg flex items-center justify-center gap-2 md:gap-3 cursor-pointer hover:bg-slate-200 transition-colors"
+                    onClick={() => !editingTimeKey && startEditingTime("start", times.start)}
+                >
                     <Clock className="w-5 h-5 text-slate-900" />
-                    <span className="font-bold text-slate-900 text-sm md:text-base">09:00 hs</span>
+                    {editingTimeKey === "start" ? (
+                        <input
+                            className="w-full bg-white border border-violet-200 px-1 rounded text-slate-900 font-bold outline-none"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            autoFocus
+                            onBlur={() => saveTime("start")}
+                            onKeyDown={(e) => e.key === 'Enter' && saveTime("start")}
+                        />
+                    ) : (
+                        <span className="font-bold text-slate-900 text-sm md:text-base">{times.start}</span>
+                    )}
                 </div>
                 <div className="w-px h-10 bg-slate-300"></div>
-                <div className="flex-1 bg-[#f5f5f5] p-3 md:p-4 rounded-lg flex items-center justify-center cursor-pointer hover:bg-slate-200 transition-colors">
-                    <span className="font-bold text-slate-900 text-sm md:text-base">06:00 hs</span>
+                <div
+                    className="flex-1 bg-[#f5f5f5] p-3 md:p-4 rounded-lg flex items-center justify-center cursor-pointer hover:bg-slate-200 transition-colors"
+                    onClick={() => !editingTimeKey && startEditingTime("end", times.end)}
+                >
+                    {editingTimeKey === "end" ? (
+                        <input
+                            className="w-full bg-white border border-violet-200 px-1 rounded text-slate-900 font-bold outline-none text-center"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            autoFocus
+                            onBlur={() => saveTime("end")}
+                            onKeyDown={(e) => e.key === 'Enter' && saveTime("end")}
+                        />
+                    ) : (
+                        <span className="font-bold text-slate-900 text-sm md:text-base">{times.end}</span>
+                    )}
                 </div>
             </div>
 
@@ -60,15 +105,16 @@ const SidePanel: React.FC<SidePanelProps> = ({ topics, onTopicChange, onSubmit, 
                                         value={editValue}
                                         onChange={(e) => setEditValue(e.target.value)}
                                         autoFocus
-                                        onKeyDown={(e) => e.key === 'Enter' && saveEdit(i)}
+                                        onKeyDown={(e) => e.key === 'Enter' && saveTopic(i)}
+                                        onBlur={() => saveTopic(i)}
                                     />
-                                    <button onClick={() => saveEdit(i)}><Check className="w-4 h-4 text-green-500" /></button>
+                                    <button onClick={() => saveTopic(i)}><Check className="w-4 h-4 text-green-500" /></button>
                                 </div>
                             ) : (
                                 <div className="flex-1 flex items-center justify-between ml-4">
                                     <span className="text-slate-500 line-clamp-1">{topic}</span>
                                     <button
-                                        onClick={() => startEditing(i, topic)}
+                                        onClick={() => startEditingTopic(i, topic)}
                                         className="opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
                                         <Edit2 className="w-3.5 h-3.5 text-slate-400 hover:text-violet-500" />

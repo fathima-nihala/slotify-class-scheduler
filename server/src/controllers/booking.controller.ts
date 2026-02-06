@@ -3,30 +3,61 @@ import prisma from '../lib/prisma';
 
 export const createBookings = async (req: Request, res: Response) => {
     try {
-        const { scheduleIds, userId } = req.body;
+        const { bookings: bookingData, userId } = req.body;
 
-        if (!scheduleIds || !Array.isArray(scheduleIds) || scheduleIds.length === 0) {
-            res.status(400).json({ error: 'At least one schedule must be selected' });
+        if (!bookingData || !Array.isArray(bookingData) || bookingData.length === 0) {
+            res.status(400).json({ error: 'No slots provided for booking' });
             return;
         }
 
-        // Create bookings in a transaction
-        const bookings = await prisma.$transaction(
-            scheduleIds.map(id => prisma.booking.create({
-                data: {
-                    userId,
-                    scheduleId: id
-                }
-            }))
-        );
+        // Ensure user exists
+        const user = await prisma.user.upsert({
+            where: { id: userId },
+            update: {},
+            create: {
+                id: userId,
+                email: `${userId}@example.com`,
+                name: userId,
+                password: 'placeholder-password'
+            }
+        });
 
-        res.status(201).json(bookings);
+        // Create bookings and update schedule details in a transaction
+        const result = await prisma.$transaction(async (tx) => {
+            const createdBookings = [];
+
+            for (const item of bookingData) {
+                // Update schedule with the specific topic/time user chose
+                await tx.schedule.update({
+                    where: { id: item.scheduleId },
+                    data: {
+                        topic: item.topic,
+                        startTime: item.startTime,
+                        endTime: item.endTime
+                    }
+                });
+
+                // Create the booking
+                const booking = await tx.booking.create({
+                    data: {
+                        userId: user.id,
+                        scheduleId: item.scheduleId
+                    }
+                });
+                createdBookings.push(booking);
+            }
+
+            return createdBookings;
+        });
+
+        res.status(201).json(result);
     } catch (error: any) {
+        console.error("CREATE BOOKINGS ERROR:", error);
         if (error.code === 'P2002') {
             res.status(400).json({ error: 'One or more slots already booked by this user' });
             return;
         }
-        res.status(500).json({ error: 'Failed to create bookings' });
+        res.status(500).json({ error: 'Failed to create bookings', details: error.message });
     }
 };
 

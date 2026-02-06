@@ -15,8 +15,8 @@ export const scheduleApi = {
 };
 
 export const bookingApi = {
-    createBookings: (userId: string, scheduleIds: string[]) =>
-        api.post('/bookings', { userId, scheduleIds }),
+    createBookings: (userId: string, bookings: { scheduleId: string, topic: string, startTime: string, endTime: string }[]) =>
+        api.post('/bookings', { userId, bookings }),
 
     getUserBookings: (userId: string) =>
         api.get(`/bookings/user/${userId}`),
