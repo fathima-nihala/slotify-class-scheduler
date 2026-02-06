@@ -90,7 +90,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
                         onClick={onViewScheduled}
                         className="text-xs font-bold text-violet-600 hover:text-violet-700 cursor-pointer"
                     >
-                        View History
+                        Scheduled Classes
                     </button>
                 </div>
                 <div className="space-y-3 md:space-y-4">
