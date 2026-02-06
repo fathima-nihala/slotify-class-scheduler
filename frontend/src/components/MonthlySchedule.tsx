@@ -303,6 +303,26 @@ const MonthlySchedule: React.FC = () => {
                                     <DayCell key={`end-${i}`} day={i + 1} isFiller bgColor="bg-[#f5f6f7]" textColor="text-slate-400" />
                                 ))}
                             </div>
+
+                            {/* Color Legend */}
+                            <div className="mt-8 flex flex-wrap gap-4 md:gap-8 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded bg-[#e6e0f3]"></div>
+                                    <span className="text-xs font-bold text-slate-600">Available Slots</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded bg-[#674c7e]"></div>
+                                    <span className="text-xs font-bold text-slate-600">Your Selection</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded bg-[#4a345e]"></div>
+                                    <span className="text-xs font-bold text-slate-600">Booked Class</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded bg-slate-200 opacity-30"></div>
+                                    <span className="text-xs font-bold text-slate-400">Off Day (Inactive)</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

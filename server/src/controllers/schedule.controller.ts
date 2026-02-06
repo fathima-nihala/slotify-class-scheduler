@@ -63,20 +63,26 @@ export const seedMonthlySchedules = async (req: Request, res: Response) => {
             "Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7"
         ];
 
-        // Distribution of slots as per pattern
-        const scheduleDays = [1, 2, 3, 4, 5, 7, 8, 11, 12, 14, 15, 16, 17, 18, 22, 23, 24, 25, 26, 28, 29];
+        const data = [];
+        let activeDayCount = 0;
 
-        const data = scheduleDays.map(day => {
+        for (let day = 1; day <= daysInMonth; day++) {
             const date = start.date(day);
-            const topicIndex = (day - 1) % 7;
-            return {
-                date: date.toDate(),
-                topic: TOPICS[topicIndex],
-                startTime: "09:00",
-                endTime: "18:00",
-                isActive: true
-            };
-        });
+            const dayOfWeek = date.day(); // 0 (Sun) to 6 (Sat)
+
+            // If it's Monday (1) through Friday (5)
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                const topicIndex = activeDayCount % 7; // Cycle through the 7 topics
+                data.push({
+                    date: date.toDate(),
+                    topic: TOPICS[topicIndex],
+                    startTime: "09:00",
+                    endTime: "18:00",
+                    isActive: true
+                });
+                activeDayCount++;
+            }
+        }
 
         const result = await prisma.schedule.createMany({
             data,
