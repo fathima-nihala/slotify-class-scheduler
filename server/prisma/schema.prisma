@@ -24,56 +24,34 @@ model User {
   @@map("users")
 }
 
-model Batch {
-  id        String     @id @default(cuid())
-  month     Int        // 1-12
-  year      Int        // 2024, 2025, etc.
-  batchNum  Int        // 1, 2, or 3
-  startDate DateTime   // First day of batch
-  endDate   DateTime   // Last day of batch
-  createdAt DateTime   @default(now())
-  
-  classes   Class[]
 
-  @@unique([month, year, batchNum])
-  @@map("batches")
-}
-
-model Class {
+model Schedule {
   id        String     @id @default(cuid())
-  batchId   String
-  batch     Batch      @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  
-  dayOfWeek Int        // 0-6, Monday=0, Sunday=6
   date      DateTime
-  topic     String     // Topic name for the class
-  
-  createdAt DateTime   @default(now())
-  
+  topic     String
+  startTime String
+  endTime   String
+  isActive  Boolean    @default(true)
+
   bookings  Booking[]
 
-  @@unique([batchId, date, topic])
-  @@map("classes")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([date])
+  @@map("schedules")
 }
 
 model Booking {
-  id        String     @id @default(cuid())
-  userId    String
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  classId   String
-  class     Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
-  
-  status    BookingStatus @default(PENDING)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  
-  @@unique([userId, classId])
-  @@map("bookings")
-}
+  id          String     @id @default(cuid())
+  userId      String
+  scheduleId  String
 
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedule    Schedule  @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, scheduleId])
+  @@map("bookings")
 }

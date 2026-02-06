@@ -1,8 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import { config } from './config';
-import batchesRouter from './routes/batches';
-import bookingsRouter from './routes/bookings';
 import authRouter from './routes/auth';
 
 const app = express();
@@ -13,8 +11,6 @@ app.use(express.json());
 
 // Routes
 app.use('/api', authRouter);
-app.use('/api', batchesRouter);
-app.use('/api', bookingsRouter);
 
 // Health check
 app.get('/health', (req, res) => {
