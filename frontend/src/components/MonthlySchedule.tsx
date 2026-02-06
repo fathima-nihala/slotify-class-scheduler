@@ -20,7 +20,11 @@ interface ScheduleSlot {
 
 interface UserBooking {
     id: string;
+    userId: string;
     scheduleId: string;
+    topic: string;
+    startTime: string;
+    endTime: string;
     schedule: ScheduleSlot;
 }
 
@@ -43,30 +47,53 @@ const MonthlySchedule: React.FC = () => {
     const [userBookings, setUserBookings] = useState<UserBooking[]>([]);
     const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-
-    // Notification State
     const [notification, setNotification] = useState<{ message: string, type: "success" | "error" } | null>(null);
 
     // Persistence for Custom Topics & Times
     const [customTopics, setCustomTopics] = useState<string[]>(() => {
-        const saved = localStorage.getItem("slotify_custom_topics");
-        return saved ? JSON.parse(saved) : [
-            "Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7"
-        ];
+        const key = `slotify_topics_${dayjs().format("MM_YYYY")}`;
+        const saved = localStorage.getItem(key);
+        return saved ? JSON.parse(saved) : ["Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7"];
     });
 
     const [classTimes, setClassTimes] = useState<{ start: string, end: string }>(() => {
-        const saved = localStorage.getItem("slotify_class_times");
+        const key = `slotify_times_${dayjs().format("MM_YYYY")}`;
+        const saved = localStorage.getItem(key);
         return saved ? JSON.parse(saved) : { start: "09:00 hs", end: "06:00 hs" };
     });
 
+    // Keys are derived from currentMonth
+    const topicsKey = useMemo(() => `slotify_topics_${currentMonth.format("MM_YYYY")}`, [currentMonth]);
+    const timesKey = useMemo(() => `slotify_times_${currentMonth.format("MM_YYYY")}`, [currentMonth]);
+
+    // Track if we are in the middle of a month transition to prevent auto-saving old data into new month
+    const [isTransitioning, setIsTransitioning] = useState(false);
+
+    // Update topics/times ONLY when month changes
     useEffect(() => {
-        localStorage.setItem("slotify_custom_topics", JSON.stringify(customTopics));
-    }, [customTopics]);
+        setIsTransitioning(true);
+        const savedT = localStorage.getItem(topicsKey);
+        const savedTm = localStorage.getItem(timesKey);
+
+        setCustomTopics(savedT ? JSON.parse(savedT) : ["Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7"]);
+        setClassTimes(savedTm ? JSON.parse(savedTm) : { start: "09:00 hs", end: "06:00 hs" });
+
+        // Brief delay to ensure state updates before allowing auto-save
+        setTimeout(() => setIsTransitioning(false), 50);
+    }, [topicsKey, timesKey]);
+
+    // Save topics/times ONLY after transition is done and values change
+    useEffect(() => {
+        if (!isTransitioning) {
+            localStorage.setItem(topicsKey, JSON.stringify(customTopics));
+        }
+    }, [customTopics, topicsKey, isTransitioning]);
 
     useEffect(() => {
-        localStorage.setItem("slotify_class_times", JSON.stringify(classTimes));
-    }, [classTimes]);
+        if (!isTransitioning) {
+            localStorage.setItem(timesKey, JSON.stringify(classTimes));
+        }
+    }, [classTimes, timesKey, isTransitioning]);
 
     // Derived State
     const startOfMonth = currentMonth.startOf("month");
@@ -103,9 +130,14 @@ const MonthlySchedule: React.FC = () => {
 
     // Fetch Personal Bookings
     const fetchBookings = async () => {
-        if (!userId) return;
+        if (!userId) {
+            console.warn("No userId found, cannot fetch bookings.");
+            return;
+        }
         try {
+            console.log(`[DEBUG] Fetching bookings for user: ${userId}`);
             const res = await bookingApi.getUserBookings(userId);
+            console.log(`[DEBUG] Fetched ${res.data.length} bookings for user ${userId}:`, res.data);
             setUserBookings(res.data);
         } catch (err) {
             console.error("Error fetching bookings", err);
@@ -155,7 +187,7 @@ const MonthlySchedule: React.FC = () => {
                 id: booking.id,
                 date: d.toDate(),
                 day: d.date(),
-                topic: booking.schedule.topic,
+                topic: booking.topic, // Use the custom topic from the booking, not the global schedule
                 label: `Day ${((d.date() - 1) % 7) + 1}`
             });
         });
@@ -241,13 +273,13 @@ const MonthlySchedule: React.FC = () => {
                     <div className="flex flex-col items-end w-full md:w-auto">
                         <h2 className="text-2xl font-semibold text-slate-800 mb-2">Monthly Schedule</h2>
                         <div className="flex items-center gap-4">
-                            <button onClick={() => setCurrentMonth(prev => prev.subtract(1, "month"))} className="p-1 hover:bg-slate-100 rounded-md transition-colors">
+                            <button onClick={() => setCurrentMonth(prev => prev.subtract(1, "month"))} className="p-1 hover:bg-slate-100 rounded-md transition-colors cursor-pointer">
                                 <ChevronLeft className="w-6 h-6 text-slate-400" />
                             </button>
                             <span className="text-xl font-medium text-[#c0b4d4]">
                                 {currentMonth.format("MMMM YYYY")}
                             </span>
-                            <button onClick={() => setCurrentMonth(prev => prev.add(1, "month"))} className="p-1 hover:bg-slate-100 rounded-md transition-colors">
+                            <button onClick={() => setCurrentMonth(prev => prev.add(1, "month"))} className="p-1 hover:bg-slate-100 rounded-md transition-colors cursor-pointer">
                                 <ChevronRight className="w-6 h-6 text-slate-400" />
                             </button>
                         </div>

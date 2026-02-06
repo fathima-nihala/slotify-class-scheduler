@@ -27,7 +27,7 @@ const ScheduledClasses: React.FC<ScheduledClassesProps> = ({ groups, onDelete, o
                 <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Scheduled Classes</h1>
                 <button
                     onClick={onAddNew}
-                    className="bg-[#674c7e] text-white px-6 py-2 rounded-lg font-bold shadow-md hover:bg-[#5a426e] transition-all"
+                    className="bg-[#674c7e] text-white px-6 py-2 rounded-lg font-bold shadow-md hover:bg-[#5a426e] transition-all cursor-pointer"
                 >
                     Add New Slot
                 </button>
@@ -51,7 +51,7 @@ const ScheduledClasses: React.FC<ScheduledClassesProps> = ({ groups, onDelete, o
                                     </div>
                                     <button
                                         onClick={() => onDelete(cls.id)}
-                                        className="text-[10px] font-bold text-slate-400 border border-slate-200 py-1 rounded hover:bg-slate-50 transition-colors uppercase"
+                                        className="text-[10px] font-bold text-slate-400 border border-slate-200 py-1 rounded hover:bg-slate-50 transition-colors uppercase cursor-pointer"
                                     >
                                         Delete
                                     </button>

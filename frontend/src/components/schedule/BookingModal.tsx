@@ -30,7 +30,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
             <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl relative">
                 <button
                     onClick={onClose}
-                    className="absolute top-6 right-6 p-2 hover:bg-slate-100 rounded-full transition-colors"
+                    className="absolute top-6 right-6 p-2 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
                 >
                     <X className="w-6 h-6 text-slate-400" />
                 </button>
@@ -51,7 +51,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
                                 </div>
                                 <button
                                     onClick={() => onRemoveSlot(slot.id)}
-                                    className="text-[10px] text-slate-400 border border-slate-200 py-1 rounded hover:bg-slate-50 transition-colors uppercase font-bold"
+                                    className="text-[10px] text-slate-400 border border-slate-200 py-1 rounded hover:bg-slate-50 transition-colors uppercase font-bold cursor-pointer"
                                 >
                                     Delete
                                 </button>
@@ -62,13 +62,13 @@ const BookingModal: React.FC<BookingModalProps> = ({
                     <div className="flex justify-center gap-4">
                         <button
                             onClick={onClose}
-                            className="px-10 py-3 rounded-lg bg-slate-200 text-slate-600 font-bold hover:bg-slate-300 transition-all uppercase"
+                            className="px-10 py-3 rounded-lg bg-slate-200 text-slate-600 font-bold hover:bg-slate-300 transition-all uppercase cursor-pointer"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={onConfirm}
-                            className="px-10 py-3 rounded-lg bg-[#674c7e] text-white font-bold hover:bg-[#5a426e] shadow-lg transition-all uppercase"
+                            className="px-10 py-3 rounded-lg bg-[#674c7e] text-white font-bold hover:bg-[#5a426e] shadow-lg transition-all uppercase cursor-pointer"
                         >
                             Ok
                         </button>

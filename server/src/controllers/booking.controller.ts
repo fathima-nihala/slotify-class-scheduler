@@ -22,26 +22,19 @@ export const createBookings = async (req: Request, res: Response) => {
             }
         });
 
-        // Create bookings and update schedule details in a transaction
+        // Create bookings with user-specific data in a transaction
         const result = await prisma.$transaction(async (tx) => {
             const createdBookings = [];
 
             for (const item of bookingData) {
-                // Update schedule with the specific topic/time user chose
-                await tx.schedule.update({
-                    where: { id: item.scheduleId },
-                    data: {
-                        topic: item.topic,
-                        startTime: item.startTime,
-                        endTime: item.endTime
-                    }
-                });
-
-                // Create the booking
+                // Create the booking with its own topic and times
                 const booking = await tx.booking.create({
                     data: {
                         userId: user.id,
-                        scheduleId: item.scheduleId
+                        scheduleId: item.scheduleId,
+                        topic: item.topic,
+                        startTime: item.startTime,
+                        endTime: item.endTime
                     }
                 });
                 createdBookings.push(booking);

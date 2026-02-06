@@ -66,13 +66,37 @@ export const seedMonthlySchedules = async (req: Request, res: Response) => {
         const data = [];
         let activeDayCount = 0;
 
+        // Simple Indian Public Holidays Helper (Fixed for Demo/2026)
+        const isIndianHoliday = (d: dayjs.Dayjs) => {
+            const dateStr = d.format("MM-DD");
+            const year = d.year();
+
+            const holidays = [
+                "01-26", // Republic Day
+                "08-15", // Independence Day
+                "10-02", // Gandhi Jayanti
+                "12-25", // Christmas
+                "05-01", // Labor Day
+            ];
+
+            // 2026 Specific major festival approx dates
+            const festival2026 = [
+                "03-03", // Holi
+                "03-20", // Eid-ul-Fitr
+                "08-26", // Raksha Bandhan
+                "11-08", // Diwali
+            ];
+
+            return holidays.includes(dateStr) || (year === 2026 && festival2026.includes(dateStr));
+        };
+
         for (let day = 1; day <= daysInMonth; day++) {
             const date = start.date(day);
             const dayOfWeek = date.day(); // 0 (Sun) to 6 (Sat)
 
-            // If it's Monday (1) through Friday (5)
-            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                const topicIndex = activeDayCount % 7; // Cycle through the 7 topics
+            // If it's Monday (1) through Saturday (6) AND NOT an Indian Holiday
+            if (dayOfWeek >= 1 && dayOfWeek <= 6 && !isIndianHoliday(date)) {
+                const topicIndex = activeDayCount % 7;
                 data.push({
                     date: date.toDate(),
                     topic: TOPICS[topicIndex],

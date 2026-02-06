@@ -14,9 +14,9 @@ const MonthStrip: React.FC<MonthStripProps> = ({ selectedMonth, onMonthChange })
                 <button
                     key={month}
                     onClick={() => onMonthChange(idx)}
-                    className={`px-3 py-2 text-sm font-semibold transition-all ${selectedMonth === idx
-                            ? "bg-white text-slate-900 shadow-sm border-y border-slate-100"
-                            : "text-slate-400 hover:text-slate-600"
+                    className={`px-3 py-2 text-sm font-semibold transition-all cursor-pointer ${selectedMonth === idx
+                        ? "bg-white text-slate-900 shadow-sm border-y border-slate-100"
+                        : "text-slate-400 hover:text-slate-600"
                         }`}
                 >
                     {month}

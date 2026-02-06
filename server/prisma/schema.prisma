@@ -46,6 +46,11 @@ model Booking {
   id          String     @id @default(cuid())
   userId      String
   scheduleId  String
+  
+  // Custom fields per user booking
+  topic       String
+  startTime   String
+  endTime     String
 
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   schedule    Schedule  @relation(fields: [scheduleId], references: [id], onDelete: Cascade)

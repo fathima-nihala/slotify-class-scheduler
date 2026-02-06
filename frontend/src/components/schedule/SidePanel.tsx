@@ -88,7 +88,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
                     <h3 className="font-bold text-slate-800">Monthly Topics</h3>
                     <button
                         onClick={onViewScheduled}
-                        className="text-xs font-bold text-violet-600 hover:text-violet-700"
+                        className="text-xs font-bold text-violet-600 hover:text-violet-700 cursor-pointer"
                     >
                         View History
                     </button>
@@ -108,14 +108,14 @@ const SidePanel: React.FC<SidePanelProps> = ({
                                         onKeyDown={(e) => e.key === 'Enter' && saveTopic(i)}
                                         onBlur={() => saveTopic(i)}
                                     />
-                                    <button onClick={() => saveTopic(i)}><Check className="w-4 h-4 text-green-500" /></button>
+                                    <button onClick={() => saveTopic(i)} className="cursor-pointer"><Check className="w-4 h-4 text-green-500" /></button>
                                 </div>
                             ) : (
                                 <div className="flex-1 flex items-center justify-between ml-4">
                                     <span className="text-slate-500 line-clamp-1">{topic}</span>
                                     <button
                                         onClick={() => startEditingTopic(i, topic)}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                     >
                                         <Edit2 className="w-3.5 h-3.5 text-slate-400 hover:text-violet-500" />
                                     </button>
@@ -130,7 +130,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
             <div className="mt-auto space-y-6">
                 <button
                     onClick={onSubmit}
-                    className="w-full bg-[#674c7e] text-white py-3 md:py-4 rounded-xl text-lg md:text-xl font-bold shadow-md hover:bg-[#5a426e] transition-all"
+                    className="w-full bg-[#674c7e] text-white py-3 md:py-4 rounded-xl text-lg md:text-xl font-bold shadow-md hover:bg-[#5a426e] transition-all cursor-pointer"
                 >
                     Submit
                 </button>
