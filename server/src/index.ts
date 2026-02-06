@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { config } from './config';
 import authRouter from './routes/auth';
+import scheduleRouter from './routes/schedule';
+import bookingRouter from './routes/booking';
 
 const app = express();
 
@@ -11,6 +13,8 @@ app.use(express.json());
 
 // Routes
 app.use('/api', authRouter);
+app.use('/api', scheduleRouter);
+app.use('/api', bookingRouter);
 
 // Health check
 app.get('/health', (req, res) => {

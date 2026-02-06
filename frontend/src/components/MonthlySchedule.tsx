@@ -1,216 +1,341 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import dayjs from "dayjs";
-import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import { ChevronLeft, ChevronRight, Clock, Facebook, Instagram, Twitter, MessageCircle } from "lucide-react";
+import { useSelector } from "react-redux";
+import { scheduleApi, bookingApi } from "../services/api";
+import DayCell from "./schedule/DayCell";
+import MonthStrip from "./schedule/MonthStrip";
+import SidePanel from "./schedule/SidePanel";
+import BookingModal from "./schedule/BookingModal";
+import ScheduledClasses from "./schedule/ScheduledClasses";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-dayjs.extend(isSameOrAfter);
+interface ScheduleSlot {
+    id: string;
+    date: string;
+    topic: string;
+    startTime: string;
+    endTime: string;
+    isActive: boolean;
+}
+
+interface UserBooking {
+    id: string;
+    scheduleId: string;
+    schedule: ScheduleSlot;
+}
 
 const WEEK_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-const TOPICS = [
-    "Topic 1",
-    "Topic 2",
-    "Topic 3",
-    "Topic 4",
-    "Topic 5",
-    "Topic 6",
-    "Topic 7",
-];
 
 const MonthlySchedule: React.FC = () => {
-    const today = dayjs();
-    const [currentMonth, setCurrentMonth] = useState(today.startOf("month"));
-    const [selectedMonth, setSelectedMonth] = useState(today.month());
+    // Auth State (Assuming user is in Redux)
+    const { user } = useSelector((state: any) => state.auth);
+    const userId = user?.id || "guest"; // Fallback for testing if redux not ready
 
+    // View State
+    const [view, setView] = useState<"calendar" | "scheduled">("calendar");
+
+    // Date State
+    const [currentMonth, setCurrentMonth] = useState(dayjs());
+    const [selectedMonthIdx, setSelectedMonthIdx] = useState(dayjs().month());
+
+    // Data State
+    const [availableSchedules, setAvailableSchedules] = useState<ScheduleSlot[]>([]);
+    const [userBookings, setUserBookings] = useState<UserBooking[]>([]);
+    const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
+    const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+
+    // Dynamic Topics State
+    const [customTopics, setCustomTopics] = useState<string[]>([
+        "Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5", "Topic 6", "Topic 7"
+    ]);
+
+    // Derived State
     const startOfMonth = currentMonth.startOf("month");
     const daysInMonth = currentMonth.daysInMonth();
     const startDay = startOfMonth.day();
 
-    const getDayInfo = (day: number) => {
-        const date = currentMonth.date(day);
-        const isPast = date.isBefore(today.startOf("day"));
-        const topicIndex = (day - 1) % 7;
+    // Fetch Schedules
+    const fetchSchedules = async () => {
+        try {
+            const res = await scheduleApi.getSchedules(currentMonth.month(), currentMonth.year());
+            console.log("Fetched schedules:", res.data.length);
+            setAvailableSchedules(res.data);
 
-        // Distribution of colors as seen in the original image pattern
-        const darkPurpleDays = [2, 4, 12, 14, 22, 25, 29];
-        const lightPurpleDays = [1, 3, 5, 7, 8, 11, 15, 16, 17, 18, 23, 24, 26, 28];
-
-        const isDark = darkPurpleDays.includes(day);
-        const isLight = lightPurpleDays.includes(day);
-
-        return {
-            label: `Day ${topicIndex + 1}`,
-            topic: TOPICS[topicIndex],
-            bgColor: isDark ? "bg-[#674c7e]" : isLight ? "bg-[#e6e0f3]" : "bg-[#f5f6f7]",
-            textColor: isDark ? "text-white" : isLight ? "text-[#7e699f]" : "text-[#9ca3af]",
-            isScheduled: isDark || isLight,
-            isPast
-        };
+            // Seed automatically for the current view if empty
+            if (res.data.length === 0) {
+                console.log("Seeding current month...");
+                await scheduleApi.seedSchedules(currentMonth.month(), currentMonth.year());
+                const reFetch = await scheduleApi.getSchedules(currentMonth.month(), currentMonth.year());
+                setAvailableSchedules(reFetch.data);
+            }
+        } catch (err) {
+            console.error("Error fetching schedules:", err);
+        }
     };
 
-    const handleMonthChange = (idx: number) => {
-        setSelectedMonth(idx);
-        setCurrentMonth(dayjs().month(idx).year(currentMonth.year()));
+    // Update topics based on fetched schedule if available
+    useEffect(() => {
+        if (availableSchedules.length > 0) {
+            const unique = Array.from(new Set(availableSchedules.map(s => s.topic)));
+            if (unique.length > 0) setCustomTopics(unique);
+        }
+    }, [availableSchedules]);
+
+    // Fetch Personal Bookings
+    const fetchBookings = async () => {
+        if (!userId) return;
+        try {
+            const res = await bookingApi.getUserBookings(userId);
+            setUserBookings(res.data);
+        } catch (err) {
+            console.error("Error fetching bookings", err);
+        }
     };
+
+    useEffect(() => {
+        fetchSchedules();
+        fetchBookings();
+    }, [currentMonth, userId]);
+
+    // Handle Topic Change (Local for now, could be synced to API)
+    const handleTopicChange = (idx: number, newTopic: string) => {
+        const newTopics = [...customTopics];
+        newTopics[idx] = newTopic;
+        setCustomTopics(newTopics);
+
+        // Update topics in available schedules locally for UI consistency
+        setAvailableSchedules(prev => prev.map(s => {
+            const dayNum = dayjs(s.date).date();
+            if ((dayNum - 1) % 7 === idx) {
+                return { ...s, topic: newTopic };
+            }
+            return s;
+        }));
+    };
+
+    // Format data for ScheduledClasses component (Page 3)
+    const groupedBookings = useMemo(() => {
+        const groups: any[] = [];
+        const sorted = [...userBookings].sort((a, b) => dayjs(a.schedule.date).unix() - dayjs(b.schedule.date).unix());
+
+        sorted.forEach(booking => {
+            const d = dayjs(booking.schedule.date);
+            const monthName = d.format("MMMM");
+            const year = d.year();
+
+            let group = groups.find((g: any) => g.name === monthName && g.year === year);
+            if (!group) {
+                group = { name: monthName, year, classes: [] };
+                groups.push(group);
+            }
+
+            group.classes.push({
+                id: booking.id,
+                date: d.toDate(),
+                day: d.date(),
+                topic: booking.schedule.topic,
+                label: `Day ${((d.date() - 1) % 7) + 1}`
+            });
+        });
+
+        return groups;
+    }, [userBookings]);
+
+    // Handle Slot Selection
+    const toggleSlot = (id: string) => {
+        console.log("Toggling slot ID:", id);
+        setSelectedSlotIds(prev => {
+            const next = prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id];
+            console.log("New Selected IDs:", next);
+            return next;
+        });
+    };
+
+    const handleConfirmBookings = async () => {
+        try {
+            await bookingApi.createBookings(userId, selectedSlotIds);
+            setSelectedSlotIds([]);
+            setIsBookingModalOpen(false);
+            await fetchBookings();
+            setView("scheduled");
+        } catch (err) {
+            alert("Failed to book slots. Some might be already booked.");
+        }
+    };
+
+    const handleDeleteBooking = async (id: string) => {
+        if (window.confirm("Are you sure you want to delete this booking?")) {
+            try {
+                await bookingApi.deleteBooking(id);
+                await fetchBookings();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    };
+
+    // Selected Slot Details for Modal
+    const selectedSlotDetails = useMemo(() => {
+        return selectedSlotIds.map(id => {
+            const slot = availableSchedules.find(s => s.id === id);
+            const d = dayjs(slot?.date);
+            const topicIdx = (d.date() - 1) % 7;
+            return {
+                id: id,
+                day: d.date(),
+                topic: slot?.topic || customTopics[topicIdx] || "",
+                label: `Day ${topicIdx + 1}`
+            };
+        });
+    }, [selectedSlotIds, availableSchedules, customTopics]);
+
+    if (view === "scheduled") {
+        return (
+            <div className="min-h-screen bg-[#fafafa] p-4 md:p-8">
+                <ScheduledClasses
+                    groups={groupedBookings}
+                    onDelete={handleDeleteBooking}
+                    onAddNew={() => setView("calendar")}
+                />
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-[#fafafa] p-4 md:p-8 font-sans text-slate-800">
-            <div className="max-w-[1280px] mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-10 transition-all duration-300">
+        <div className="min-h-screen bg-[#fafafa] p-2 sm:p-4 md:p-8 font-sans text-slate-800">
+            <div className="max-w-[1280px] mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-10">
 
-                {/* Header Section */}
+                {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Select your slots</h1>
-
+                    <h1 className="text-3xl font-bold text-slate-900">Select your slots</h1>
                     <div className="flex flex-col items-end w-full md:w-auto">
-                        <h2 className="text-xl md:text-2xl font-semibold text-slate-800 mb-2">Monthly Schedule</h2>
+                        <h2 className="text-2xl font-semibold text-slate-800 mb-2">Monthly Schedule</h2>
                         <div className="flex items-center gap-4">
                             <button
-                                onClick={() => setCurrentMonth(prev => prev.subtract(1, 'month'))}
+                                onClick={() => setCurrentMonth(prev => prev.subtract(1, "month"))}
                                 className="p-1 hover:bg-slate-100 rounded-md transition-colors"
                             >
-                                <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-slate-400" />
+                                <ChevronLeft className="w-6 h-6 text-slate-400" />
                             </button>
-                            <span className="text-lg md:text-xl font-medium text-[#c0b4d4]">
+                            <span className="text-xl font-medium text-[#c0b4d4]">
                                 {currentMonth.format("MMMM YYYY")}
                             </span>
                             <button
-                                onClick={() => setCurrentMonth(prev => prev.add(1, 'month'))}
+                                onClick={() => setCurrentMonth(prev => prev.add(1, "month"))}
                                 className="p-1 hover:bg-slate-100 rounded-md transition-colors"
                             >
-                                <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-slate-400" />
+                                <ChevronRight className="w-6 h-6 text-slate-400" />
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* Main Content Area */}
                 <div className="flex flex-col lg:flex-row gap-6">
-
                     {/* Calendar Grid */}
                     <div className="flex-1 overflow-x-auto lg:overflow-visible">
-                        <div className="min-w-[500px] lg:min-w-0">
+                        <div className="min-w-[600px] lg:min-w-0">
                             <div className="grid grid-cols-7 mb-4">
                                 {WEEK_DAYS.map((day) => (
-                                    <div key={day} className="text-center text-xs md:text-sm font-medium text-[#c0b4d4]">
+                                    <div key={day} className="text-center text-sm font-medium text-[#c0b4d4] uppercase">
                                         {day}
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="grid grid-cols-7 gap-1 md:gap-2">
-                                {/* Fillers for empty days */}
+                            <div className="grid grid-cols-7 gap-2">
                                 {Array.from({ length: startDay }).map((_, i) => (
-                                    <div key={`filler-${i}`} className="h-20 md:h-32 bg-[#f5f6f7] rounded-sm flex items-end justify-center p-2">
-                                        <span className="text-slate-400 text-sm">-</span>
-                                    </div>
+                                    <DayCell key={`filler-${i}`} day="-" isFiller bgColor="bg-[#f5f6f7]" textColor="text-slate-400" />
                                 ))}
 
-                                {/* Day cells */}
                                 {Array.from({ length: daysInMonth }).map((_, i) => {
-                                    const day = i + 1;
-                                    const info = getDayInfo(day);
+                                    const dayNum = i + 1;
+                                    const dateObj = currentMonth.date(dayNum);
+                                    const isPast = dateObj.isBefore(dayjs().startOf("day"));
+
+                                    // Find schedule for THIS specific day
+                                    const schedule = availableSchedules.find(s => dayjs(s.date).isSame(dateObj, 'day'));
+                                    const isBooked = userBookings.some(b => dayjs(b.schedule.date).isSame(dateObj, 'day'));
+                                    const isSelected = selectedSlotIds.includes(schedule?.id || "");
+
+                                    // Logic: 
+                                    // 1. SELECTED (current session): bg-[#674c7e] + border
+                                    // 2. BOOKED (previously saved): bg-[#4a345e] (slightly darker)
+                                    // 3. AVAILABLE: bg-[#e6e0f3]
+
+                                    let cellBg = "bg-[#f5f6f7]";
+                                    let cellText = "text-[#9ca3af]";
+
+                                    if (isSelected) {
+                                        cellBg = "bg-[#674c7e]";
+                                        cellText = "text-white";
+                                    } else if (isBooked) {
+                                        cellBg = "bg-[#4a345e]"; // Even darker for booked classes
+                                        cellText = "text-white";
+                                    } else if (schedule) {
+                                        cellBg = "bg-[#e6e0f3]";
+                                        cellText = "text-[#7e699f]";
+                                    }
 
                                     return (
-                                        <div
-                                            key={day}
-                                            className={`h-20 md:h-32 rounded-sm p-1.5 md:p-3 flex flex-col justify-between transition-all ${info.isPast
-                                                    ? "opacity-40 cursor-not-allowed grayscale-[0.2]"
-                                                    : "cursor-pointer hover:opacity-90"
-                                                } ${info.bgColor}`}
-                                        >
-                                            {info.isScheduled ? (
-                                                <div className="overflow-hidden">
-                                                    <div className={`text-[10px] md:text-[12px] font-bold leading-tight truncate ${info.textColor}`}>{info.label}</div>
-                                                    <div className={`text-[8px] md:text-[10px] uppercase tracking-wider font-semibold opacity-80 truncate hidden sm:block ${info.textColor}`}>{info.topic}</div>
-                                                </div>
-                                            ) : <div></div>}
-
-                                            <div className={`text-right text-sm md:text-base font-bold ${info.textColor} opacity-60`}>
-                                                {String(day).padStart(2, "0")}
-                                            </div>
-                                        </div>
+                                        <DayCell
+                                            key={dayNum}
+                                            day={dayNum}
+                                            isPast={isPast && !isBooked}
+                                            isScheduled={!!schedule}
+                                            label={schedule ? `Day ${((dayNum - 1) % 7) + 1}` : ""}
+                                            topic={schedule?.topic || customTopics[(dayNum - 1) % 7]}
+                                            isSelected={isSelected}
+                                            bgColor={cellBg}
+                                            textColor={cellText}
+                                            onClick={() => {
+                                                if (isBooked) {
+                                                    alert("This slot is already booked!");
+                                                    return;
+                                                }
+                                                if (schedule) {
+                                                    toggleSlot(schedule.id);
+                                                } else {
+                                                    alert("Please select a date with an active slot pattern (Purple cells)");
+                                                }
+                                            }}
+                                        />
                                     );
                                 })}
 
-                                {/* End fillers */}
                                 {Array.from({ length: (7 - (startDay + daysInMonth) % 7) % 7 }).map((_, i) => (
-                                    <div key={`end-filler-${i}`} className="h-20 md:h-32 bg-[#f5f6f7] rounded-sm flex items-end justify-end p-2 opacity-50">
-                                        <span className="text-slate-400 text-sm">{String(i + 1).padStart(2, '0')}</span>
-                                    </div>
+                                    <DayCell key={`end-${i}`} day={i + 1} isFiller bgColor="bg-[#f5f6f7]" textColor="text-slate-400" />
                                 ))}
                             </div>
                         </div>
                     </div>
 
-                    {/* Right Information Panel */}
+                    {/* Right Side */}
                     <div className="w-full lg:w-[380px] flex gap-4">
-                        <div className="flex-1 flex flex-col gap-4">
-                            {/* Time Selection */}
-                            <div className="flex items-center gap-2">
-                                <div className="flex-1 bg-[#f5f5f5] p-3 md:p-4 rounded-lg flex items-center justify-center gap-2 md:gap-3">
-                                    <Clock className="w-5 h-5 text-slate-900" />
-                                    <span className="font-bold text-slate-900 text-sm md:text-base">09:00 hs</span>
-                                </div>
-                                <div className="w-px h-10 bg-slate-300"></div>
-                                <div className="flex-1 bg-[#f5f5f5] p-3 md:p-4 rounded-lg flex items-center justify-center">
-                                    <span className="font-bold text-slate-900 text-sm md:text-base">06:00 hs</span>
-                                </div>
-                            </div>
-
-                            {/* Topic Detail View */}
-                            <div className="bg-[#f5f5f5] p-4 md:p-6 rounded-lg flex-1 min-h-[250px] md:min-h-[300px]">
-                                <div className="space-y-3 md:space-y-4">
-                                    {TOPICS.map((topic, i) => (
-                                        <div key={i} className="flex items-center text-sm md:text-lg">
-                                            <span className="font-extrabold text-slate-700 min-w-[60px] md:min-w-[70px]">Day {i + 1}:</span>
-                                            <span className="text-slate-500 ml-4 line-clamp-1">{topic}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Actions & Footer */}
-                            <div className="mt-auto space-y-6">
-                                <button className="w-full bg-[#674c7e] text-white py-3 md:py-4 rounded-xl text-lg md:text-xl font-bold shadow-md hover:bg-[#5a426e] transition-all">
-                                    Submit
-                                </button>
-
-                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                                    <div className="flex gap-3">
-                                        {[Instagram, Facebook, Twitter, MessageCircle].map((Icon, i) => (
-                                            <div key={i} className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center cursor-pointer hover:bg-slate-700 transition-colors">
-                                                <Icon size={16} />
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <div className="text-slate-900 font-bold text-xs md:text-sm text-center">
-                                        For inquiry : <span className="text-slate-700">+44 123456789</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Vertical Month Strip */}
-                        <div className="hidden md:flex flex-col bg-[#f5f5f5] rounded-lg overflow-y-auto max-h-[600px] no-scrollbar py-2 border-l border-white shadow-inner shrink-0">
-                            {MONTHS.map((month, idx) => (
-                                <button
-                                    key={month}
-                                    onClick={() => handleMonthChange(idx)}
-                                    className={`px-3 py-2 text-xs md:text-sm font-semibold transition-all ${selectedMonth === idx
-                                            ? "bg-white text-slate-900 shadow-sm border-y border-slate-100"
-                                            : "text-slate-400 hover:text-slate-600"
-                                        }`}
-                                >
-                                    {month}
-                                </button>
-                            ))}
-                        </div>
+                        <SidePanel
+                            topics={customTopics}
+                            onTopicChange={handleTopicChange}
+                            onSubmit={() => selectedSlotIds.length > 0 && setIsBookingModalOpen(true)}
+                            onViewScheduled={() => setView("scheduled")}
+                            inquiryNumber="+44 123456789"
+                        />
+                        <MonthStrip
+                            selectedMonth={selectedMonthIdx}
+                            onMonthChange={(idx) => {
+                                setSelectedMonthIdx(idx);
+                                setCurrentMonth(prev => prev.month(idx));
+                            }}
+                        />
                     </div>
-
                 </div>
             </div>
+
+            <BookingModal
+                isOpen={isBookingModalOpen}
+                onClose={() => setIsBookingModalOpen(false)}
+                selectedSlots={selectedSlotDetails}
+                onRemoveSlot={(id) => setSelectedSlotIds(prev => prev.filter(i => i !== id))}
+                onConfirm={handleConfirmBookings}
+            />
         </div>
     );
 };
