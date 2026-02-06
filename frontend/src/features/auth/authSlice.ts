@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/tool
 import axios from 'axios';
 
 // API base URL - should be in env or config
-const API_URL = 'http://localhost:8008/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8008/api';
 
 // Types
 interface User {
